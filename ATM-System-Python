@@ -1,1 +1,213 @@
-atm_system.py
+import csv
+import os
+
+# Saves directly to your phone's Download folder so Excel can access it
+FILENAME = "/storage/emulated/0/Download/atm_database.csv"
+
+def initialize_file():
+  """Creates the CSV file with headers if it doesn't already exist."""
+  if not os.path.exists(FILENAME):
+    with open(FILENAME, mode="w", newline="") as file:
+      writer = csv.writer(file)
+      writer.writerow(["Account_No", "Name", "Address", "Contact", "Balance"])
+
+
+def create_account():
+  initialize_file()
+  print("\n--- Create Account ---")
+  name = input("Enter Account Holder Name: ")
+  address = input("Enter Address: ")
+  contact = input("Enter contact no.: ")
+  try:
+    balance = float(input("Enter initial balance: "))
+  except ValueError:
+    print("Invalid amount. Setting balance to 0.")
+    balance = 0.0
+
+  # Read existing rows to generate a sequential account number
+  rows = []
+  with open(FILENAME, mode="r", newline="") as file:
+    reader = csv.reader(file)
+    rows = list(reader)
+
+  if len(rows) <= 1:
+    acc_no = 1001
+  else:
+    last_acc = int(rows[-1][0])
+    acc_no = last_acc + 1
+
+  # Append new account data
+  with open(FILENAME, mode="a", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow([acc_no, name, address, contact, balance])
+
+  print(f"\nAccount created successfully!")
+  print(f"Your Assigned Account Number is: {acc_no}")
+
+
+def deposit():
+  initialize_file()
+  print("\n--- Deposit Money ---")
+  try:
+    acc_no = int(input("Enter Account Number: "))
+  except ValueError:
+    print("Invalid Account Number format.")
+    return
+
+  rows = []
+  found = False
+  with open(FILENAME, mode="r", newline="") as file:
+    reader = csv.reader(file)
+    rows = list(reader)
+
+  header = rows[0]
+  data_rows = rows[1:]
+
+  for row in data_rows:
+    if int(row[0]) == acc_no:
+      found = True
+      break
+
+  if not found:
+    print("Account not found!")
+    return
+
+  try:
+    amount = float(input("Enter money to deposit - "))
+  except ValueError:
+    print("Invalid amount format.")
+    return
+
+  if amount <= 0:
+    print("Deposit amount must be greater than zero.")
+    return
+
+  # Update balance for the matching account
+  for row in data_rows:
+    if int(row[0]) == acc_no:
+      current_balance = float(row[4])
+      new_balance = current_balance + amount
+      row[4] = str(new_balance)
+      print(f"Successfully deposited {amount}.")
+      print(f"Updated Balance: {new_balance}")
+
+  # Save changes back to file
+  with open(FILENAME, mode="w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(header)
+    writer.writerows(data_rows)
+
+
+def withdraw():
+  initialize_file()
+  print("\n--- Withdraw Money ---")
+  try:
+    acc_no = int(input("Enter Account Number: "))
+  except ValueError:
+    print("Invalid Account Number format.")
+    return
+
+  rows = []
+  found = False
+  with open(FILENAME, mode="r", newline="") as file:
+    reader = csv.reader(file)
+    rows = list(reader)
+
+  header = rows[0]
+  data_rows = rows[1:]
+
+  for row in data_rows:
+    if int(row[0]) == acc_no:
+      found = True
+      break
+
+  if not found:
+    print("Account not found!")
+    return
+
+  try:
+    amount = float(input("Enter money you want to withdraw: "))
+  except ValueError:
+    print("Invalid amount format.")
+    return
+
+  if amount <= 0:
+    print("Withdrawal amount must be greater than zero.")
+    return
+
+  for row in data_rows:
+    if int(row[0]) == acc_no:
+      current_balance = float(row[4])
+      if amount > current_balance:
+        print("Insufficient balance!")
+        return
+      new_balance = current_balance - amount
+      row[4] = str(new_balance)
+      print(f"Successfully withdrew {amount}.")
+      print(f"Updated Balance: {new_balance}")
+
+  # Save changes back to file
+  with open(FILENAME, mode="w", newline="") as file:
+    writer = csv.writer(file)
+    writer.writerow(header)
+    writer.writerows(data_rows)
+
+
+def show_balance():
+  initialize_file()
+  print("\n--- Show Balance ---")
+  try:
+    acc_no = int(input("Enter Account Number: "))
+  except ValueError:
+    print("Invalid Account Number format.")
+    return
+
+  found = False
+  with open(FILENAME, mode="r", newline="") as file:
+    reader = csv.reader(file)
+    next(reader)  # Skip header row
+    for row in reader:
+      if int(row[0]) == acc_no:
+        print("\n--- Account Details ---")
+        print(f"Account No : {row[0]}")
+        print(f"Name       : {row[1]}")
+        print(f"Address    : {row[2]}")
+        print(f"Contact No.: {row[3]}")
+        print(f"Balance    : {row[4]}")
+        found = True
+        break
+
+  if not found:
+    print("Account not found!")
+
+
+def main():
+  while True:
+    print("\n====================")
+    print("     ATM SYSTEM     ")
+    print("====================")
+    print("1. Create Account")
+    print("2. Deposit Money")
+    print("3. Withdraw Money")
+    print("4. Show Balance")
+    print("5. Exit")
+
+    choice = input("Choose an option (1-5): ")
+
+    if choice == "1":
+      create_account()
+    elif choice == "2":
+      deposit()
+    elif choice == "3":
+      withdraw()
+    elif choice == "4":
+      show_balance()
+    elif choice == "5":
+      print("Thank you for using the ATM system. Goodbye!")
+      break
+    else:
+      print("Invalid choice. Please select between 1 and 5.")
+
+
+if __name__ == "__main__":
+  main()
