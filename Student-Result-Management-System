@@ -1,0 +1,171 @@
+import tkinter
+from tkinter import messagebox, simpledialog
+import csv
+import os
+
+# --- 1. SPREADSHEET SETUP ---
+filename = "students_data.csv"
+
+# Creates the CSV file with headers if it does not exist
+if not os.path.exists(filename):
+    try:
+        with open(filename, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Name", "Roll No", "Class", "Total", "Per", "Result"])
+    except Exception as e:
+        print(f"Startup Error: Could not create file - {e}")
+
+# --- 2. BUTTON FUNCTIONS ---
+
+def save_to_spreadsheet():
+    # .strip() removes accidental spaces before or after the text
+    n = name_box.get().strip()
+    r = roll_box.get().strip()
+    c = class_box.get().strip()
+    
+    # 1. Check if basic details are empty[span_0](start_span)[span_0](end_span)
+    if not n or not r or not c:
+        messagebox.showerror("Missing Data", "Please fill in Name, Roll No, and Class!")
+        return
+    
+    # 2. Check if marks are valid numbers[span_1](start_span)[span_1](end_span)
+    try:
+        m1 = float(sub1_box.get())
+        m2 = float(sub2_box.get())
+        m3 = float(sub3_box.get())
+        m4 = float(sub4_box.get())
+        m5 = float(sub5_box.get())
+    except ValueError:
+        messagebox.showerror("Invalid Marks", "Please enter numbers in all 5 subject boxes (no letters or blank spaces)!")
+        return
+
+    # Calculate total and percent
+    total = m1 + m2 + m3 + m4 + m5
+    per = total / 5
+    
+    if m1 >= 35 and m2 >= 35 and m3 >= 35 and m4 >= 35 and m5 >= 35:
+        res = "Pass"
+    else:
+        res = "Fail"
+        
+    # 3. Attempt to save to the CSV spreadsheet file[span_2](start_span)[span_2](end_span)
+    try:
+        with open(filename, mode='a', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([n, r, c, total, per, res])
+            
+        # If successful, show message and clear boxes
+        messagebox.showinfo("Success", f"Details for {n} saved to spreadsheet!")
+        print(f"Saved Student: {n} (Roll No: {r}) to spreadsheet.")
+        
+        name_box.delete(0, 'end'); roll_box.delete(0, 'end'); class_box.delete(0, 'end')
+        sub1_box.delete(0, 'end'); sub2_box.delete(0, 'end'); sub3_box.delete(0, 'end')
+        sub4_box.delete(0, 'end'); sub5_box.delete(0, 'end')
+
+    except PermissionError:
+        # This catches the error if the file is currently open in Excel
+        messagebox.showerror("File Locked", "Cannot save! Please close 'students_data.csv' if it is open in Excel or another program.")
+    except Exception as e:
+        # Catches any other random errors
+        messagebox.showerror("Error", f"Could not save file: {e}")
+
+def get_result():
+    # Ask user for roll number[span_3](start_span)[span_3](end_span)
+    search_roll = simpledialog.askstring("Search", "Enter Roll No:")
+    
+    if search_roll == None or search_roll.strip() == "": 
+        return 
+        
+    found = False
+    try:
+        with open(filename, mode='r') as file:
+            reader = csv.reader(file)
+            next(reader) # Skip the header row
+            
+            for row in reader:
+                if len(row) > 0 and row[1] == search_roll.strip():
+                    print("\n--- SINGLE STUDENT RESULT ---")
+                    # Print in the requested tabular format[span_4](start_span)[span_4](end_span)
+                    print(f"{'name':<15} | {'roll no':<8} | {'class':<6} | {'total marks':<12} | {'per':<6} | {'result (p/f)'}")
+                    print("-" * 75)
+                    print(f"{row[0]:<15} | {row[1]:<8} | {row[2]:<6} | {row[3]:<12} | {row[4]:<6} | {row[5]}")
+                    print("-" * 75)
+                    found = True
+                    break
+                    
+        if not found:
+            print(f"\nError: Roll number '{search_roll}' not found in spreadsheet.")
+            messagebox.showwarning("Not Found", f"Roll number '{search_roll}' not found.")
+    except FileNotFoundError:
+        messagebox.showerror("Error", "Spreadsheet not found! Try saving a student first.")
+
+def show_all_tabular():
+    try:
+        print("\n--- ALL STUDENT RESULTS ---")
+        # Print header for tabular format[span_5](start_span)[span_5](end_span)
+        print(f"{'name':<15} | {'roll no':<8} | {'class':<6} | {'total marks':<12} | {'per':<6} | {'result (p/f)'}")
+        print("-" * 75)
+        
+        with open(filename, mode='r') as file:
+            reader = csv.reader(file)
+            next(reader) # Skip the standard header to use our custom tabular one
+            
+            for row in reader:
+                if len(row) > 0:
+                    # Print each student in aligned columns[span_6](start_span)[span_6](end_span)
+                    print(f"{row[0]:<15} | {row[1]:<8} | {row[2]:<6} | {row[3]:<12} | {row[4]:<6} | {row[5]}")
+        print("-" * 75)
+    except FileNotFoundError:
+         print("Spreadsheet not found! Save a student first.")
+
+def show_the_form():
+    start_button.pack_forget()
+    form_frame.pack(pady=20)
+
+
+# --- 3. GUI DESIGN ---
+root = tkinter.Tk()
+root.title("Student Project")
+root.geometry("500x500")
+
+# Initial Screen[span_7](start_span)[span_7](end_span)
+start_button = tkinter.Button(root, text="Add Student", font=("Arial", 16, "bold"), command=show_the_form, bg="lightblue", width=15, height=2)
+start_button.pack(pady=150)
+
+# Form Frame 
+form_frame = tkinter.Frame(root)
+
+# Details Labels and Entries[span_8](start_span)[span_8](end_span)
+tkinter.Label(form_frame, text="Name:").grid(row=0, column=0, pady=5)
+name_box = tkinter.Entry(form_frame)
+name_box.grid(row=0, column=1)
+
+tkinter.Label(form_frame, text="Roll No:").grid(row=1, column=0, pady=5)
+roll_box = tkinter.Entry(form_frame)
+roll_box.grid(row=1, column=1)
+
+tkinter.Label(form_frame, text="Class:").grid(row=2, column=0, pady=5)
+class_box = tkinter.Entry(form_frame)
+class_box.grid(row=2, column=1)
+
+tkinter.Label(form_frame, text="Sub 1:").grid(row=3, column=0)
+sub1_box = tkinter.Entry(form_frame); sub1_box.grid(row=3, column=1)
+tkinter.Label(form_frame, text="Sub 2:").grid(row=4, column=0)
+sub2_box = tkinter.Entry(form_frame); sub2_box.grid(row=4, column=1)
+tkinter.Label(form_frame, text="Sub 3:").grid(row=5, column=0)
+sub3_box = tkinter.Entry(form_frame); sub3_box.grid(row=5, column=1)
+tkinter.Label(form_frame, text="Sub 4:").grid(row=6, column=0)
+sub4_box = tkinter.Entry(form_frame); sub4_box.grid(row=6, column=1)
+tkinter.Label(form_frame, text="Sub 5:").grid(row=7, column=0)
+sub5_box = tkinter.Entry(form_frame); sub5_box.grid(row=7, column=1)
+
+# The 3 Buttons[span_9](start_span)[span_9](end_span)
+btn_frame = tkinter.Frame(form_frame)
+btn_frame.grid(row=8, column=0, columnspan=2, pady=20)
+
+tkinter.Button(btn_frame, text="Save", command=save_to_spreadsheet, bg="lightgreen").pack(side="left", padx=5)
+tkinter.Button(btn_frame, text="Get Result", command=get_result, bg="lightyellow").pack(side="left", padx=5)
+tkinter.Button(btn_frame, text="All Results", command=show_all_tabular, bg="lightblue").pack(side="left", padx=5)
+
+root.mainloop()
+
